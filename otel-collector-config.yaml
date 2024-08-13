@@ -2,33 +2,46 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317
       http:
-        endpoint: 0.0.0.0:4318
 
 exporters:
   debug:
     verbosity: detailed
 
-  otlp:
-    endpoint: jaeger:4317
+  prometheus:
+    endpoint: "prometheus-homolog.up.railway.app:8889"
+    const_labels:
+      label1: value1
+
+  logging:
+
+  zipkin:
+    endpoint: "zipkin-homolog.up.railway.app:9411/api/v2/spans"
+    format: proto
+
+  otlp/jaeger:
+    endpoint: jaeger-homolog.up.railway.app:4317
     tls:
       insecure: true
 
 processors:
-  batch: {}
+  batch:
 
 extensions:
-  health_check: {}
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
 
 service:
-  extensions: [health_check]
+  extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug, otlp]
+      exporters: [logging, zipkin, otlp/jaeger, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [logging, prometheus, debug]
